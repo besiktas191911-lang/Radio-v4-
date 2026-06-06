@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Türk & Bulgar Radyoları</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #111; color: #fff; margin: 0; padding: 15px; }
+        h1 { text-align: center; color: #ffcc00; }
+        input, button { padding: 12px; margin: 8px 0; width: 100%; font-size: 16px; border-radius: 6px; }
+        button { background: #ffcc00; color: #111; border: none; font-weight: bold; }
+        .station { padding: 12px; margin: 8px 0; background: #222; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        audio { width: 100%; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <h1>🇹🇷 Türk & 🇧🇬 Bulgar Radyoları</h1>
+    <input type="text" id="search" placeholder="Kral FM, Horizont... ara">
+    <button onclick="loadAll()">Tüm Radyoları Yükle</button>
+    <button onclick="searchFilter()">Filtrele</button>
+
+    <div id="count" style="text-align:center; color:#aaa; margin:10px;"></div>
+    <div id="list"></div>
+    <div id="playing" style="text-align:center; color:#ffcc00; margin:15px; font-weight:bold;"></div>
+    <audio id="player" controls></audio>
+
+    <script>
+        const player = document.getElementById('player');
+        const list = document.getElementById('list');
+        const count = document.getElementById('count');
+        const playing = document.getElementById('playing');
+
+        async function loadAll() {
+            list.innerHTML = '<p>Yükleniyor, bekle...</p>';
+            try {
+                const proxy = 'https://api.allorigins.win/raw?url=';
+                const api = 'https://all.api.radio-browser.info/json/stations/search?limit=250&countrycode=TR,countrycode=BG&order=clicks&reverse=true';
+                const res = await fetch(proxy + encodeURIComponent(api));
+                const stations = await res.json();
+
+                list.innerHTML = '';
+                count.textContent = `${stations.length} radyo yüklendi`;
+
+                stations.forEach(st => {
+                    const url = st.url_resolved || st.url;
+                    if (!url) return;
+                    const div = document.createElement('div');
+                    div.className = 'station';
+                    div.innerHTML = `
+                        <div><strong>\( {st.name}</strong><br><small> \){st.country}</small></div>
+                        <button onclick="play('\( {url}', ' \){st.name.replace(/'/g,"\\'")}')">▶ Çal</button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch(e) {
+                list.innerHTML = '<p>Hata oluştu. Sayfayı yenile.</p>';
+            }
+        }
+
+        function play(url, name) {
+            let purl = url.includes('allorigins') ? url : 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            player.src = purl;
+            player.play().catch(() => alert('Bu radyo şu anda çalınamadı'));
+            playing.textContent = 'Çalıyor: ' + name;
+        }
+
+        function searchFilter() {
+            const q = document.getElementById('search').value.toLowerCase();
+            Array.from(list.children).forEach(div => {
+                div.style.display = div.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        window.onload = loadAll;
+    </script>
+</body>
+</html>
